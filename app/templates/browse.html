@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Browse food · LeftoverEat{% endblock %}
+{% block content %}
+{% if user.role in ['ngo', 'shelter'] and not allowed %}
+  <section class="panel">
+    {% if user.verification_status == 'rejected' %}
+      <h1>Verification wasn't approved</h1>
+      <p>An admin couldn't verify {{ user.org_name }}, so free listings stay hidden. Contact the LeftoverEat team if you think this is a mistake.</p>
+    {% else %}
+      <h1>Verification pending</h1>
+      <p>An admin is reviewing {{ user.org_name }}. Free {{ 'Community Give' if user.role == 'ngo' else 'Shelter Feed' }} listings appear here once you're approved.</p>
+    {% endif %}
+  </section>
+{% else %}
+  <h1>{{ STREAM_INFO[stream].label }} listings</h1>
+  <form method="get" action="/browse" class="search">
+    <label class="sr">Search <input name="q" value="{{ q }}" placeholder="Search by dish, hotel or area"></label>
+    <button class="btn small" type="submit">Search</button>
+  </form>
+
+  {% if not listings %}
+    <p class="empty">{% if q %}Nothing matches "{{ q }}". Clear the search to see all open listings.{% else %}No open listings right now. New surplus appears here as hotels post it.{% endif %}</p>
+  {% endif %}
+
+  {% for l in listings %}
+  <article class="listing {{ l.stream }}">
+    <header>
+      <h3>{{ l.title }}</h3>
+      <span class="price">{{ l.price_cents|price }}</span>
+    </header>
+    <p class="meta">{{ l.hotel.org_name }} · {{ l.address }}</p>
+    {% if l.description %}<p>{{ l.description }}</p>{% endif %}
+    <p class="meta">Pickup {{ l.pickup_start|dt }} to {{ l.pickup_end|dt }} · {{ l.temp_note }} · safe until {{ l.safe_until|dt }} · {{ l.remaining }} left</p>
+    {% if l.stream == 'give' %}<p class="hint">Check the safe-until time before serving. The hotel is responsible for food safety until pickup.</p>{% endif %}
+    <form method="post" action="/browse/claim/{{ l.id }}" class="claim-form">
+      <label>Portions <input type="number" name="qty" min="1" max="{{ l.remaining }}" value="1"></label>
+      <button class="btn" type="submit">Reserve for pickup</button>
+    </form>
+  </article>
+  {% endfor %}
+{% endif %}
+
+{% if claims %}
+<h2>Your reservations</h2>
+<table>
+  <thead><tr><th>Food</th><th>Hotel</th><th>Portions</th><th>Pickup</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+  {% for c in claims %}
+    <tr>
+      <td>{{ c.listing.title }}</td>
+      <td>{{ c.listing.hotel.org_name }}<br><span class="muted">{{ c.listing.address }}</span></td>
+      <td>{{ c.qty }}</td>
+      <td>{{ c.listing.pickup_start|dt }} to {{ c.listing.pickup_end|dt }}</td>
+      <td>{{ c.status|replace('_', ' ') }}</td>
+      <td>{% if c.status == 'reserved' %}<form method="post" action="/browse/claims/{{ c.id }}/cancel" class="inline"><button class="link" type="submit">Cancel</button></form>{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

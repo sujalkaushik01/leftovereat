@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}My listings · LeftoverEat{% endblock %}
+{% block content %}
+<h1>Post surplus food</h1>
+<section class="panel">
+  <form method="post" action="/hotel/listings" class="grid-form">
+    <label class="span2">What is it? <input name="title" required maxlength="160" placeholder="e.g. Paneer butter masala, 20 portions"></label>
+    <label class="span2">Details <textarea name="description" rows="2" placeholder="Packaging, ingredients, allergens"></textarea></label>
+    <label>Stream
+      <select name="stream" id="stream">
+        <option value="deal">Rescue Deal: discounted for customers</option>
+        <option value="give">Community Give: free for verified NGOs</option>
+        <option value="shelter">Shelter Feed: free for verified animal shelters</option>
+      </select>
+    </label>
+    <label id="price-wrap">Price per portion (₹) <input name="price" type="number" min="1" step="1" inputmode="numeric"></label>
+    <label>Portions <input name="quantity" type="number" min="1" max="1000" value="10" required></label>
+    <label>Food is <select name="temp_note"><option value="hot">Hot</option><option value="cold">Cold</option><option value="ambient">Room temperature</option></select></label>
+    <label>Pickup from <input name="pickup_start" type="datetime-local" required></label>
+    <label>Pickup until <input name="pickup_end" type="datetime-local" required></label>
+    <label>Safe to eat until <input name="safe_until" type="datetime-local" required></label>
+    <label>Pickup address <input name="address" value="{{ user.address }}" maxlength="300"></label>
+    <p class="hint span2" id="safety-hint" hidden>Free human-food listings must be packed and labelled, and handed over before the safe-until time. The hotel remains responsible for food safety until pickup.</p>
+    <div class="span2"><button class="btn" type="submit">Publish listing</button></div>
+  </form>
+</section>
+
+<h2>Your listings</h2>
+{% if not listings %}
+  <p class="empty">Nothing posted yet. Use the form above to publish your first listing.</p>
+{% endif %}
+{% for l in listings %}
+<article class="listing {{ l.stream }}">
+  <header>
+    <h3>{{ l.title }}</h3>
+    <span class="tag {{ l.stream }}">{{ STREAM_INFO[l.stream].label }}</span>
+    <span class="status {{ l.display_status|replace(' ', '-') }}">{{ l.display_status }}</span>
+  </header>
+  <p class="meta">{{ l.price_cents|price }} · {{ l.remaining }} of {{ l.quantity }} portions left · pickup {{ l.pickup_start|dt }} to {{ l.pickup_end|dt }} · safe until {{ l.safe_until|dt }}</p>
+  {% if l.status == 'open' %}
+  <form method="post" action="/hotel/listings/{{ l.id }}/close" class="inline"><button class="link" type="submit">Close listing</button></form>
+  {% endif %}
+  {% if l.claims %}
+  <table>
+    <thead><tr><th>Claimed by</th><th>Portions</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for c in l.claims %}
+      <tr>
+        <td>{{ c.claimer.org_name }}</td><td>{{ c.qty }}</td><td>{{ c.status|replace('_', ' ') }}</td>
+        <td class="actions">
+          {% if c.status == 'reserved' %}
+          <form method="post" action="/hotel/claims/{{ c.id }}/picked-up" class="inline"><button class="btn small" type="submit">Mark picked up</button></form>
+          <form method="post" action="/hotel/claims/{{ c.id }}/cancel" class="inline"><button class="link" type="submit">Cancel</button></form>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</article>
+{% endfor %}
+
+<script>
+  const stream = document.getElementById('stream'), priceWrap = document.getElementById('price-wrap'),
+        hint = document.getElementById('safety-hint');
+  const price = priceWrap.querySelector('input');
+  const sync = () => {
+    const deal = stream.value === 'deal';
+    priceWrap.hidden = !deal; price.required = deal; if (!deal) price.value = '';
+    hint.hidden = stream.value !== 'give';
+  };
+  stream.addEventListener('change', sync); sync();
+</script>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <h1>One kitchen, three second chances for leftover food.</h1>
+  <p class="lede">Hotels post surplus once and choose where it goes. Customers get a discount, verified NGOs get free meals for people, and verified shelters get scraps for animals. Everything is pickup only.</p>
+  <div class="cta-row">
+    <a class="btn" href="/register?role=hotel">List surplus food</a>
+    <a class="btn ghost" href="/register?role=customer">Find a deal</a>
+    <a class="btn ghost" href="/register?role=ngo">Register an NGO or shelter</a>
+  </div>
+</section>
+
+<section class="streams" aria-label="The three streams">
+  {% for key in ['deal', 'give', 'shelter'] %}
+  <article class="stream {{ key }}">
+    <h2>{{ STREAM_INFO[key].label }}</h2>
+    <p class="who">For {{ STREAM_INFO[key].who|lower }}</p>
+    <p>{{ STREAM_INFO[key].blurb }}.
+      {% if key == 'deal' %}Priced by the hotel, reserved online, paid at pickup.
+      {% elif key == 'give' %}Only visible to NGOs an admin has verified.
+      {% else %}Only visible to shelters an admin has verified.{% endif %}</p>
+  </article>
+  {% endfor %}
+</section>
+
+<p class="counter"><strong>{{ meals }}</strong> portions reserved so far.</p>
+{% endblock %}

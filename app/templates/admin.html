@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Verification · LeftoverEat{% endblock %}
+{% block content %}
+<h1>NGO and shelter verification</h1>
+
+<h2>Waiting for review</h2>
+{% if not pending %}<p class="empty">No profiles are waiting. New NGO and shelter sign-ups appear here.</p>{% endif %}
+{% for o in pending %}
+<article class="listing">
+  <header><h3>{{ o.org_name }}</h3><span class="tag {{ 'give' if o.role == 'ngo' else 'shelter' }}">{{ 'NGO' if o.role == 'ngo' else 'Shelter' }}</span></header>
+  <p class="meta">{{ o.email }} · {{ o.address }} · registered {{ o.created_at|dt }}</p>
+  <div class="actions">
+    <form method="post" action="/admin/users/{{ o.id }}/review" class="inline"><input type="hidden" name="decision" value="verified"><button class="btn small" type="submit">Approve</button></form>
+    <form method="post" action="/admin/users/{{ o.id }}/review" class="inline"><input type="hidden" name="decision" value="rejected"><button class="link" type="submit">Reject</button></form>
+  </div>
+</article>
+{% endfor %}
+
+{% if reviewed %}
+<h2>Already reviewed</h2>
+<table>
+  <thead><tr><th>Organisation</th><th>Type</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+  {% for o in reviewed %}
+    <tr>
+      <td>{{ o.org_name }}<br><span class="muted">{{ o.email }}</span></td>
+      <td>{{ o.role }}</td><td>{{ o.verification_status }}</td>
+      <td>
+        <form method="post" action="/admin/users/{{ o.id }}/review" class="inline">
+          <input type="hidden" name="decision" value="{{ 'rejected' if o.verification_status == 'verified' else 'verified' }}">
+          <button class="link" type="submit">{{ 'Revoke' if o.verification_status == 'verified' else 'Approve' }}</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

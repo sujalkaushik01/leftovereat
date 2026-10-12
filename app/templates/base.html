@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}LeftoverEat{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="wordmark" href="/">LeftoverEat</a>
+    <nav>
+      {% if user %}
+        {% if user.role == 'hotel' %}<a href="/hotel">My listings</a>
+        {% elif user.role == 'admin' %}<a href="/admin">Verification</a>
+        {% else %}<a href="/browse">Browse food</a>{% endif %}
+        <span class="who">{{ user.org_name }}</span>
+        <form method="post" action="/logout" class="inline"><button class="link" type="submit">Log out</button></form>
+      {% else %}
+        <a href="/login">Log in</a>
+        <a class="btn small" href="/register">Create account</a>
+      {% endif %}
+    </nav>
+  </header>
+  <main>
+    {% if msg %}<p class="flash ok" role="status">{{ msg }}</p>{% endif %}
+    {% if error %}<p class="flash bad" role="alert">{{ error }}</p>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="site-footer">
+    <p>Pickup only. Reservations are held until the end of the pickup window; pay the hotel directly for Rescue Deals.</p>
+  </footer>
+</body>
+</html>
