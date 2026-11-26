@@ -14,7 +14,7 @@
 {% else %}
   <h1>{{ STREAM_INFO[stream].label }} listings</h1>
   <form method="get" action="/browse" class="search">
-    <label class="sr">Search <input name="q" value="{{ q }}" placeholder="Search by dish, hotel or area"></label>
+    <label><span class="sr">Search</span> <input name="q" value="{{ q }}" placeholder="Search by dish, hotel or area"></label>
     <button class="btn small" type="submit">Search</button>
   </form>
 
@@ -28,6 +28,7 @@
       <h3>{{ l.title }}</h3>
       <span class="price">{{ l.price_cents|price }}</span>
     </header>
+    {% if l.photo %}<img class="food-photo" src="/photos/{{ l.id }}" alt="{{ l.title }}" loading="lazy">{% endif %}
     <p class="meta">{{ l.hotel.org_name }} · {{ l.address }}</p>
     {% if l.description %}<p>{{ l.description }}</p>{% endif %}
     <p class="meta">Pickup {{ l.pickup_start|dt }} to {{ l.pickup_end|dt }} · {{ l.temp_note }} · safe until {{ l.safe_until|dt }} · {{ l.remaining }} left</p>

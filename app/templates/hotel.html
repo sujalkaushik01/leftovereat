@@ -3,7 +3,7 @@
 {% block content %}
 <h1>Post surplus food</h1>
 <section class="panel">
-  <form method="post" action="/hotel/listings" class="grid-form">
+  <form method="post" action="/hotel/listings" class="grid-form" enctype="multipart/form-data">
     <label class="span2">What is it? <input name="title" required maxlength="160" placeholder="e.g. Paneer butter masala, 20 portions"></label>
     <label class="span2">Details <textarea name="description" rows="2" placeholder="Packaging, ingredients, allergens"></textarea></label>
     <label>Stream
@@ -19,6 +19,9 @@
     <label>Pickup from <input name="pickup_start" type="datetime-local" required></label>
     <label>Pickup until <input name="pickup_end" type="datetime-local" required></label>
     <label>Safe to eat until <input name="safe_until" type="datetime-local" required></label>
+    <label class="span2">Photo of the food (optional, JPEG/PNG/WebP, max 3 MB)
+      <input name="photo" type="file" accept="image/jpeg,image/png,image/webp">
+    </label>
     <label>Pickup address <input name="address" value="{{ user.address }}" maxlength="300"></label>
     <p class="hint span2" id="safety-hint" hidden>Free human-food listings must be packed and labelled, and handed over before the safe-until time. The hotel remains responsible for food safety until pickup.</p>
     <div class="span2"><button class="btn" type="submit">Publish listing</button></div>
@@ -36,6 +39,7 @@
     <span class="tag {{ l.stream }}">{{ STREAM_INFO[l.stream].label }}</span>
     <span class="status {{ l.display_status|replace(' ', '-') }}">{{ l.display_status }}</span>
   </header>
+  {% if l.photo %}<img class="food-photo" src="/photos/{{ l.id }}" alt="{{ l.title }}" loading="lazy">{% endif %}
   <p class="meta">{{ l.price_cents|price }} · {{ l.remaining }} of {{ l.quantity }} portions left · pickup {{ l.pickup_start|dt }} to {{ l.pickup_end|dt }} · safe until {{ l.safe_until|dt }}</p>
   {% if l.status == 'open' %}
   <form method="post" action="/hotel/listings/{{ l.id }}/close" class="inline"><button class="link" type="submit">Close listing</button></form>

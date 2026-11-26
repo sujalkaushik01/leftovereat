@@ -100,3 +100,7 @@ table { width: 100%; border-collapse: collapse; margin-top: .6rem; font-size: .9
 th, td { text-align: left; padding: .5rem .4rem; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { font-weight: 600; }
 @media (max-width: 40rem) { table { display: block; overflow-x: auto; } }
+
+.food-photo { display: block; width: 100%; max-width: 28rem; max-height: 16rem; object-fit: cover;
+  border-radius: var(--radius); border: 1px solid var(--line); margin: .5rem 0; }
+input[type="file"] { padding: .4rem; }

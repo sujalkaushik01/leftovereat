@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import DateTime, ForeignKey, Integer, LargeBinary, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .config import now_local
@@ -59,6 +59,8 @@ class Listing(Base):
 
     hotel: Mapped[User] = relationship()
     claims: Mapped[list["Claim"]] = relationship(back_populates="listing")
+    # Row only (image bytes are deferred), so `listing.photo` is a cheap "has a photo?" check.
+    photo: Mapped["ListingPhoto | None"] = relationship(uselist=False, lazy="selectin")
 
     @property
     def is_free(self) -> bool:
@@ -74,6 +76,14 @@ class Listing(Base):
         if self.remaining <= 0:
             return "fully claimed"
         return "open"
+
+
+class ListingPhoto(Base):
+    __tablename__ = "listing_photos"
+
+    listing_id: Mapped[int] = mapped_column(ForeignKey("listings.id"), primary_key=True)
+    content_type: Mapped[str] = mapped_column(String(40))
+    data: Mapped[bytes] = mapped_column(LargeBinary, deferred=True)
 
 
 class Claim(Base):

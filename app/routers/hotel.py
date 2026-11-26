@@ -1,14 +1,15 @@
 from datetime import datetime
 from urllib.parse import quote_plus
 
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from ..config import now_local
 from ..db import get_db
-from ..models import STREAMS, Claim, Listing, User
+from ..models import STREAMS, Claim, Listing, ListingPhoto, User
+from ..photos import MAX_PHOTO_BYTES, sniff_image_type
 from ..auth import require_role
 from ..services import ClaimError, cancel_claim
 from ..templating import templates
@@ -58,6 +59,7 @@ def create_listing(
     address: str = Form(""),
     safe_until: str = Form(...),
     temp_note: str = Form("ambient"),
+    photo: UploadFile | None = File(None),
     user: User = Depends(require_role("hotel")),
     db: Session = Depends(get_db),
 ):
@@ -81,6 +83,15 @@ def create_listing(
     if safe < end:
         return _back(error="Safe-until must be at or after the end of the pickup window.")
 
+    photo_bytes, photo_type = None, None
+    if photo is not None and photo.filename:
+        photo_bytes = photo.file.read(MAX_PHOTO_BYTES + 1)
+        if len(photo_bytes) > MAX_PHOTO_BYTES:
+            return _back(error="Photo is too large. Use an image under 3 MB.")
+        photo_type = sniff_image_type(photo_bytes)
+        if photo_type is None:
+            return _back(error="Photo must be a JPEG, PNG or WebP image.")
+
     price_cents: int | None = None
     if stream == "deal":
         try:
@@ -90,14 +101,16 @@ def create_listing(
         if price_cents <= 0:
             return _back(error="Rescue Deal price must be more than zero. Use a free stream to give food away.")
 
-    db.add(
-        Listing(
-            hotel_id=user.id, title=title, description=description.strip(), stream=stream,
-            price_cents=price_cents, quantity=quantity, remaining=quantity,
-            pickup_start=start, pickup_end=end, address=(address.strip() or user.address),
-            safe_until=safe, temp_note=temp_note,
-        )
+    listing = Listing(
+        hotel_id=user.id, title=title, description=description.strip(), stream=stream,
+        price_cents=price_cents, quantity=quantity, remaining=quantity,
+        pickup_start=start, pickup_end=end, address=(address.strip() or user.address),
+        safe_until=safe, temp_note=temp_note,
     )
+    db.add(listing)
+    db.flush()
+    if photo_bytes:
+        db.add(ListingPhoto(listing_id=listing.id, content_type=photo_type, data=photo_bytes))
     db.commit()
     return _back(msg="Listing published.")
 

@@ -1,13 +1,13 @@
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from .auth import get_current_user
 from .db import Base, SessionLocal, engine, get_db
-from .models import User
+from .models import ListingPhoto, User
 from .routers import admin, auth_routes, browse, hotel
 from .seed import seed
 from .services import meals_reserved
@@ -40,4 +40,15 @@ def health(db: Session = Depends(get_db)):
 def home(request: Request, msg: str = "", user: User | None = Depends(get_current_user), db: Session = Depends(get_db)):
     return templates.TemplateResponse(
         request, "home.html", {"user": user, "msg": msg, "meals": meals_reserved(db)}
+    )
+
+
+@app.get("/photos/{listing_id}")
+def listing_photo(listing_id: int, db: Session = Depends(get_db)):
+    photo = db.get(ListingPhoto, listing_id)
+    if photo is None:
+        raise HTTPException(status_code=404)
+    return Response(
+        content=photo.data, media_type=photo.content_type,
+        headers={"Cache-Control": "public, max-age=86400", "X-Content-Type-Options": "nosniff"},
     )
